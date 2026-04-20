@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Sign-In Logs Already Know It's an Agent — The Gaps Are in the Layers Above</title>
+
+<meta name="description" content="Sign-in logs already surface agent traffic via UserAgent and ClientAppUsed — the real visibility gaps live in the layers above identity." />
+<meta name="author" content="Shashi" />
+<link rel="canonical" href="https://rowanvale-sec.github.io/articles/Securing_ai_agents_blog_part1.html" />
+
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Your Sign-In Logs Already Know It's an Agent — The Gaps Are in the Layers Above" />
+<meta property="og:description" content="Sign-in logs already surface agent traffic via UserAgent and ClientAppUsed — the real visibility gaps live in the layers above identity." />
+<meta property="og:url" content="https://rowanvale-sec.github.io/articles/Securing_ai_agents_blog_part1.html" />
+<meta property="og:image" content="https://rowanvale-sec.github.io/assets/images/cover.jpg" />
+<meta property="og:site_name" content="Rowan Vale" />
+<meta property="article:published_time" content="2026-04-19" />
+<meta property="article:author" content="Shashi" />
+<meta property="article:tag" content="AI Security" />
+<meta property="article:tag" content="Identity" />
+<meta property="article:tag" content="Agent Observability" />
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf7f2;
+    --bg-warm: #f5f0e8;
+    --surface: #ffffff;
+    --text: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --text-muted: #5a5a5a;
+    --accent: #c4960a;
+    --accent-light: #fdf6e3;
+    --green: #2d8a56;
+    --green-light: #e8f5ee;
+    --green-bg: #f0faf4;
+    --red: #c0392b;
+    --red-light: #fdf0ee;
+    --red-bg: #fef5f3;
+    --orange: #d4760a;
+    --orange-light: #fef6ec;
+    --blue: #2563eb;
+    --blue-light: #eff4ff;
+    --border: #e5e0d8;
+    --border-strong: #d0c9bd;
+    --code-bg: #2d2d2d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Header ── */
+  .hero {
+    padding: 80px 0 60px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .hero-series {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 20px;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--blue);
+  }
+  .hero-subtitle {
+    font-size: 20px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+  .hero-meta {
+    margin-top: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Prose ── */
+  p { margin-bottom: 24px; color: var(--text-secondary); }
+  p strong { color: var(--text); font-weight: 600; }
+
+  h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 56px 0 20px;
+    line-height: 1.25;
+  }
+  h3 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 36px 0 12px;
+  }
+
+  /* ── Callout Boxes ── */
+  .callout {
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-left: 4px solid;
+  }
+  .callout-insight {
+    background: var(--blue-light);
+    border-color: var(--blue);
+  }
+  .callout-good {
+    background: var(--green-bg);
+    border-color: var(--green);
+  }
+  .callout-bad {
+    background: var(--red-bg);
+    border-color: var(--red);
+  }
+  .callout-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .callout-insight .callout-label { color: var(--blue); }
+  .callout-good .callout-label { color: var(--green); }
+  .callout-bad .callout-label { color: var(--red); }
+  .callout p { margin-bottom: 0; font-size: 16px; line-height: 1.65; }
+  .callout p strong { color: var(--text); }
+
+  /* ── Diagrams ── */
+  .diagram-container {
+    margin: 40px -40px;
+    padding: 32px 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+  .diagram-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .diagram-caption {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  /* ── Entity Cards ── */
+  .entity-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .entity-card {
+    flex: 1;
+    min-width: 120px;
+    padding: 14px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    text-align: center;
+  }
+  .entity-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .entity-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .entity-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .e-blue { border-top: 3px solid var(--blue); }
+  .e-blue .entity-id { color: var(--blue); }
+  .e-green { border-top: 3px solid var(--green); }
+  .e-green .entity-id { color: var(--green); }
+  .e-orange { border-top: 3px solid var(--orange); }
+  .e-orange .entity-id { color: var(--orange); }
+  .e-accent { border-top: 3px solid var(--accent); }
+  .e-accent .entity-id { color: var(--accent); }
+  .e-muted { border-top: 3px solid var(--text-muted); }
+  .e-muted .entity-id { color: var(--text-muted); }
+
+  /* ── Comparison Table ── */
+  .comparison-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+    margin: 20px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .comparison-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 14px 16px;
+    text-align: left;
+    background: var(--bg-warm);
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .comparison-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table .col-step { width: 20%; font-weight: 600; color: var(--text); }
+  .comparison-table .col-pa { width: 40%; }
+  .comparison-table .col-copilot { width: 40%; }
+
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .badge-visible { background: var(--green-light); color: var(--green); }
+  .badge-partial { background: var(--orange-light); color: var(--orange); }
+  .badge-gone { background: var(--red-light); color: var(--red); }
+
+  /* ── Layer Diagram ── */
+  .layer-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .layer-box {
+    padding: 20px 24px;
+    border-radius: 8px;
+    border: 1px solid;
+    position: relative;
+  }
+  .layer-box .layer-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .layer-box .layer-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .layer-box .layer-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .layer-blue { border-color: var(--blue); background: var(--blue-light); }
+  .layer-blue .layer-num, .layer-blue .layer-name { color: var(--blue); }
+  .layer-accent { border-color: var(--accent); background: var(--accent-light); }
+  .layer-accent .layer-num, .layer-accent .layer-name { color: var(--accent); }
+  .layer-green { border-color: var(--green); background: var(--green-bg); }
+  .layer-green .layer-num, .layer-green .layer-name { color: var(--green); }
+
+  .layer-gap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
+  }
+  .layer-gap-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .layer-gap-line .tick { width: 2px; height: 10px; background: var(--red); opacity: 0.4; }
+  .layer-gap-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--red);
+    background: var(--red-light);
+    padding: 3px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(192,57,43,0.15);
+  }
+
+  .layer-has-missing {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .layer-has-missing .lhm-col {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .lhm-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .lhm-has .lhm-label { color: var(--green); }
+  .lhm-missing .lhm-label { color: var(--red); }
+  .lhm-col p { font-size: 13px; margin-bottom: 0; color: var(--text-secondary); }
+
+  /* ── Role Takeaways ── */
+  .role-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .role-card {
+    padding: 20px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .role-card:hover { border-color: var(--blue); }
+  .role-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+  .role-card p {
+    font-size: 14px;
+    margin-bottom: 0;
+    line-height: 1.55;
+  }
+
+  /* ── Code blocks ── */
+  .log-block {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--code-bg);
+    color: #e0e0e0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 16px 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  .log-green { color: #6ddb8a; }
+  .log-red { color: #f87171; }
+  .log-orange { color: #fbbf24; }
+  .log-muted { color: #888; }
+
+  /* ── Divider ── */
+  .section-divider {
+    width: 60px;
+    height: 3px;
+    background: var(--blue);
+    margin: 56px 0;
+    border-radius: 2px;
+  }
+
+  /* ── Architecture Comparison (Visual 1.5) ── */
+  .arch-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .arch-side {
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .arch-side-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .arch-merged-box {
+    border: 2px solid var(--green);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--green-bg);
+  }
+  .arch-merged-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 8px;
+  }
+  .arch-merged-sublabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .arch-inner-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .arch-inner-step {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    background: var(--surface);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    flex: 1;
+    text-align: center;
+  }
+  .arch-inner-arrow {
+    color: var(--text-muted);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .arch-split-box {
+    border: 2px solid;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .arch-split-box.e4 {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .arch-split-box.e5 {
+    border-color: var(--blue);
+    background: var(--blue-light);
+  }
+  .arch-split-label {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .arch-split-sublabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+  .arch-loop {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 8px 0;
+    padding: 0 12px;
+  }
+  .arch-loop-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+  .arch-loop-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    width: 16px;
+    flex-shrink: 0;
+  }
+  .arch-loop-arrow {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 2px 0;
+  }
+  .arch-callout {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border-left: 3px solid;
+  }
+  .arch-callout.good {
+    background: var(--green-bg);
+    border-color: var(--green);
+  }
+  .arch-callout.gap {
+    background: var(--red-bg);
+    border-color: var(--red);
+  }
+  @media (max-width: 768px) {
+    .arch-compare { grid-template-columns: 1fr; }
+  }
+
+  /* ── Punchline Box ── */
+  .punchline {
+    margin: 48px -40px;
+    padding: 32px 40px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2520 100%);
+    border-radius: 12px;
+    color: #faf7f2;
+  }
+  .punchline .callout-label { color: var(--blue); }
+  .punchline p { color: #d4cfc7; font-size: 17px; line-height: 1.7; }
+  .punchline strong { color: #faf7f2; }
+  .punchline .hl-green { color: #6ddb8a; font-weight: 600; }
+  .punchline .hl-red { color: #f87171; font-weight: 600; }
+
+  /* ── Footer ── */
+  .blog-footer {
+    margin-top: 64px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .blog-footer a { color: var(--blue); text-decoration: none; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 30px; }
+    .diagram-container { margin: 32px -12px; padding: 20px 16px; }
+    .punchline { margin: 40px -12px; padding: 24px 20px; }
+    .entity-row { flex-direction: column; }
+    .role-grid { grid-template-columns: 1fr; }
+    .layer-has-missing { grid-template-columns: 1fr; }
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero { animation: fadeUp 0.8s ease-out; }
+  .diagram-container { animation: fadeUp 0.6s ease-out; }
+
+  /* ── Video Embed ── */
+  .video-embed {
+    margin: 0 0 48px;
+  }
+  .video-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #000;
+  }
+  .video-frame iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .video-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    text-align: center;
+  }
+  .video-caption a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+  .video-caption a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ═══ HERO ═══ -->
+  <div class="hero">
+    <div class="hero-series">Securing AI Agents — An Explainer Series</div>
+    <h1>Your Sign-In Logs Already Know <em>It's an Agent</em>. The Gaps Are in the Layers Above.</h1>
+    <div class="hero-subtitle">AI agents don't break your authentication. They break your security team's ability to reconstruct what happened and why. Here's where the visibility ends, exactly.</div>
+    <div class="hero-meta">April 2026 &nbsp;·&nbsp; 12 min read &nbsp;·&nbsp; For security engineers, security architects, AppSec, GRC, and auditors</div>
+  </div>
+
+  <!-- ═══ VIDEO ═══ -->
+  <div class="video-embed">
+    <div class="video-frame">
+      <iframe
+        src="https://www.youtube-nocookie.com/embed/2D3vipXOsBo"
+        title="Securing AI Agents — Part 1"
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen></iframe>
+    </div>
+    <div class="video-caption">Prefer YouTube? <a href="https://youtu.be/2D3vipXOsBo" target="_blank" rel="noopener">Watch on YouTube ↗</a></div>
+  </div>
+
+  <!-- ═══ THE HOOK ═══ -->
+  <p>Here's a question that sounds simple but isn't:</p>
+
+  <p><strong>If your AI copilot accesses sensitive data, makes a judgment call, and takes an action on behalf of a user — can your security team reconstruct what happened and why?</strong></p>
+
+  <p>If you work in IAM, you want to know whose credentials were used. If you're in AppSec, you want to know which tools were invoked and whether input validation held. If you're in SecOps, you want the correlated event chain. If you're in GRC, you want auditable evidence of accountability. If you're an auditor, you want all of the above.</p>
+
+  <p>The surprising part? <strong>Your identity infrastructure actually answers its piece of this correctly today.</strong> Entra ID's sign-in logs can distinguish a Copilot-initiated action from a user-initiated one. The authentication layer works.</p>
+
+  <p>The problem is what happens above the identity layer — three critical gaps in your security observability that didn't matter when automation was deterministic, but matter enormously when AI agents are making judgment calls.</p>
+
+  <p>To see those gaps clearly, we need to understand the cast of characters involved every time an agent acts on behalf of a user.</p>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ THE FIVE ENTITIES ═══ -->
+  <h2>Five entities, not two</h2>
+
+  <p>Most people think of agent actions as a simple pair: the user and the agent. In reality, there are <strong>five distinct entities</strong> involved in every agent-mediated action. Understanding them is the prerequisite to understanding the accountability gaps.</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 1 — The Cast of Characters</div>
+    <div class="entity-row">
+      <div class="entity-card e-blue">
+        <div class="entity-id">E1</div>
+        <div class="entity-name">The Human</div>
+        <div class="entity-desc">The user with an identity in your IdP. Has roles, permissions, and an audit trail.</div>
+      </div>
+      <div class="entity-card e-green">
+        <div class="entity-id">E2</div>
+        <div class="entity-name">App Registration</div>
+        <div class="entity-desc">An enterprise app in your Entra ID tenant. This is what your security infrastructure authenticates — not the human, not the LLM.</div>
+      </div>
+      <div class="entity-card e-orange">
+        <div class="entity-id">E3</div>
+        <div class="entity-name">OAuth Token</div>
+        <div class="entity-desc">"App X on behalf of User Y with scopes Z." The credential that hits the API.</div>
+      </div>
+    </div>
+    <div class="entity-row" style="margin-top: 12px;">
+      <div class="entity-card e-accent">
+        <div class="entity-id">E4</div>
+        <div class="entity-name">Decision Engine</div>
+        <div class="entity-desc">The logic that decides what to do. A workflow engine or an LLM. <strong>This is where the two paths diverge.</strong></div>
+      </div>
+      <div class="entity-card e-muted">
+        <div class="entity-id">E5</div>
+        <div class="entity-name">Execution Layer</div>
+        <div class="entity-desc">The runtime that takes decisions and makes actual API calls using the OAuth token.</div>
+      </div>
+    </div>
+    <div class="diagram-caption">Entities E1, E2, E3, and E5 are architecturally identical whether you're using Power Automate or an AI copilot. Entity E4 — the decision engine — is the only thing that changes. That's the entire story.</div>
+  </div>
+
+  <p>But that one change — E4 — transforms the entire security picture. To see why, we need to double-click on how E4 and E5 relate to each other in each architecture.</p>
+
+  <!-- ═══ VISUAL 1.5: E4+E5 DOUBLE-CLICK ═══ -->
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 1.5 — Inside E4 + E5: Where the Orchestration Layer Lives</div>
+
+    <div class="arch-compare">
+      <!-- LEFT: Deterministic -->
+      <div class="arch-side">
+        <div class="arch-side-title" style="color: var(--green);">⚡ Deterministic Automation</div>
+        <div class="arch-merged-box">
+          <div class="arch-merged-label">E4 + E5 are the same entity</div>
+          <div class="arch-merged-sublabel">POWER AUTOMATE / LOGIC APPS / RPA RUNTIME</div>
+          <div class="arch-inner-flow">
+            <div class="arch-inner-step"><strong>Flow Definition</strong><br><span style="font-size:10px;color:var(--text-muted)">If/then rules<br>Sarah designed these</span></div>
+            <div class="arch-inner-arrow">→</div>
+            <div class="arch-inner-step"><strong>Connector Runtime</strong><br><span style="font-size:10px;color:var(--text-muted)">Makes API calls<br>using OAuth token</span></div>
+          </div>
+        </div>
+        <div class="arch-callout good">
+          <strong>The flow definition IS your audit trail.</strong> Decision logic and execution live in the same box. Inspect the flow and you know exactly what the automation will do — before it does it.
+        </div>
+      </div>
+
+      <!-- RIGHT: LLM-Based Agent -->
+      <div class="arch-side">
+        <div class="arch-side-title" style="color: var(--red);">🤖 LLM-Based Agent</div>
+        <div class="arch-split-box e4">
+          <div class="arch-split-label" style="color: var(--accent);">E4 — LLM (Decision Engine)</div>
+          <div class="arch-split-sublabel">GPT-4, CLAUDE, GEMINI, LLAMA, ETC.</div>
+        </div>
+        <div class="arch-loop">
+          <div class="arch-loop-step"><span class="arch-loop-num">1.</span> LLM outputs: "Call [tool] with [parameters]"</div>
+          <div class="arch-loop-arrow">↓</div>
+          <div class="arch-loop-step"><span class="arch-loop-num">2.</span> Framework executes the tool call via OAuth token</div>
+          <div class="arch-loop-arrow">↓</div>
+          <div class="arch-loop-step"><span class="arch-loop-num">3.</span> Framework returns result to LLM</div>
+          <div class="arch-loop-arrow">↓</div>
+          <div class="arch-loop-step"><span class="arch-loop-num">4.</span> LLM decides next step (loop to 1 or produce output)</div>
+        </div>
+        <div class="arch-split-box e5">
+          <div class="arch-split-label" style="color: var(--blue);">E5 — Agent Framework (Orchestration Layer)</div>
+          <div class="arch-split-sublabel">MICROSOFT AGENT FRAMEWORK, LANGCHAIN, SEMANTIC KERNEL, CREWAI, OPENAI AGENTS SDK</div>
+        </div>
+        <div class="arch-callout gap">
+          <strong>The agent framework sees everything — momentarily.</strong> It sees the LLM's tool-call requests, executes them, and feeds results back. This is the orchestration layer. It's where security controls <em>could</em> be enforced: tool-level auth, action logging, decision capture. Today, most frameworks don't expose these signals to your security stack.
+        </div>
+      </div>
+    </div>
+
+    <div class="diagram-caption">On the left, decision and execution are one entity — inspectable, static, auditable. On the right, they're split: the LLM decides, the agent framework executes. The framework is the only place where the full decision chain exists. When we say "orchestration layer" throughout this post, we mean E5 — the agent framework that sits between the LLM and your APIs.</div>
+  </div>
+
+  <p>Notice what's NOT visible to your security infrastructure in the right-side architecture: the LLM itself (E4) has no identity. It has no Entra ID, no credentials, no OAuth registration. It's a compute function called by the agent framework. Your SIEM has never seen it. Your IAM has never authenticated it. Your DLP has never classified its outputs. It operates entirely inside E4.</p>
+
+  <p>This matters because it means <strong>the most consequential actor in the chain — the one making decisions — is invisible to your entire security stack.</strong> Let's see what this looks like in practice.</p>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ THE SCENARIO ═══ -->
+  <h2>Same action, two architectures</h2>
+
+  <p>Let's take a concrete scenario. <strong>Sarah is an IT service desk manager.</strong> She wants to automate ticket routing: when a new ticket comes into ServiceNow, route it to the right team and notify the on-call channel if it's high priority.</p>
+
+  <p>She can do this two ways: build a Power Automate flow, or ask Copilot to handle it. Let's trace the same action through both paths and watch exactly where the audit trail diverges.</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 2 — The Side-by-Side Comparison</div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th class="col-step">Step</th>
+          <th class="col-pa">⚡ Power Automate</th>
+          <th class="col-copilot">🤖 AI Copilot</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-step">1. Sarah initiates</td>
+          <td>Builds a flow in the designer: "If category = network → assign to Network Team. If priority = P1 → post to on-call channel." <span class="badge badge-visible">LOGGED</span></td>
+          <td>Says: "Monitor new tickets and route them to the right team based on the content." <span class="badge badge-visible">LOGGED</span></td>
+        </tr>
+        <tr>
+          <td class="col-step">2. Decision is made</td>
+          <td>Flow checks the category field. It's "network." Deterministic match. The outcome was defined at design time by Sarah. <span class="badge badge-visible">INSPECTABLE</span></td>
+          <td>LLM reads the ticket: "VPN drops on 3rd floor." Is this network? Endpoint? Facilities? The model makes a judgment call. <span class="badge badge-gone">NOT LOGGED</span></td>
+        </tr>
+        <tr>
+          <td class="col-step">3. Authentication</td>
+          <td>Entra ID sign-in log: <em>non-interactive sign-in, client app = "Power Automate", user = sarah@acme.com</em> <span class="badge badge-visible">LOGGED</span></td>
+          <td>Entra ID sign-in log: <em>non-interactive sign-in, client app = "Microsoft 365 Copilot", user = sarah@acme.com</em> <span class="badge badge-visible">LOGGED</span></td>
+        </tr>
+        <tr>
+          <td class="col-step">4. Token scope</td>
+          <td>Scoped to exactly what the flow needs: ServiceNow.ReadWrite, Teams.Post <span class="badge badge-visible">SCOPED</span></td>
+          <td>Broad scope — might need any of: ServiceNow.ReadWrite, Teams.Post, Mail.Read, Files.Read, Calendar.Read... <span class="badge badge-partial">OVER-SCOPED</span></td>
+        </tr>
+        <tr>
+          <td class="col-step">5. Execution</td>
+          <td>One API call to assign ticket. One API call to post notification. Two events, one flow. <span class="badge badge-visible">CORRELATED</span></td>
+          <td>Five API calls: read ticket, search knowledge base, check on-call schedule, look up requester's VIP status, assign ticket. Five separate audit events with no correlation. <span class="badge badge-gone">FRAGMENTED</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="diagram-caption">Look at Step 3 — authentication. It's green on both sides. Your identity infrastructure correctly identifies the acting application in both cases. Now look at Steps 2 and 5. That's where your security telemetry goes dark — and not just for IAM. Your SIEM, DLP, and audit trail all hit the same wall.</div>
+  </div>
+
+  <p>Step 3 is the key insight. <strong>Your identity infrastructure already distinguishes Power Automate from Copilot from Sarah herself.</strong> The "client application" field in sign-in logs tells you which entity authenticated. This isn't new, and it isn't broken.</p>
+
+  <p>So if authentication works, what doesn't?</p>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ THE THREE GAPS ═══ -->
+  <h2>Three gaps in your security observability</h2>
+
+  <p>The audit trail breaks at exactly three points — none of which are in the identity layer. All three exist in Power Automate too, in theory. But Power Automate's deterministic architecture makes them non-issues. An LLM's non-deterministic architecture makes them critical. Each gap affects different security functions.</p>
+
+  <!-- Gap 1 -->
+  <div class="callout callout-bad">
+    <div class="callout-label">Gap 1 — Decision Traceability &nbsp;·&nbsp; Affects: AppSec, SecOps, GRC</div>
+    <p><strong>The question: WHY did the agent take this action?</strong></p>
+    <p>With Power Automate, you open the flow definition: category = "network," so it routed to Network Team. Deterministic. Inspectable. Reproducible. With an AI agent, the LLM's reasoning existed only during that specific inference call. Why did it classify "VPN drops on 3rd floor" as a network issue and not a facilities issue? That judgment is not logged anywhere the customer can access. There is no static artifact to inspect. AppSec teams can't validate decision logic. SOC analysts can't reconstruct incident chains. Auditors have no evidence trail.</p>
+  </div>
+
+  <!-- Gap 2 -->
+  <div class="callout callout-bad">
+    <div class="callout-label">Gap 2 — Intent Classification &nbsp;·&nbsp; Affects: IAM, Data Security, GRC</div>
+    <p><strong>The question: did the USER ask for this, or did the AGENT decide on its own?</strong></p>
+    <p>With Power Automate, every action is user-directed. The flow only does what Sarah designed. There is no ambiguity. With an AI agent, the model may autonomously decide to access additional resources to "better" answer the request. Sarah said "route the ticket." The model decided on its own to also check the knowledge base, look up VIP status, and review the on-call schedule. Were those accesses user-directed or model-initiated? The audit log shows "Copilot on behalf of Sarah accessed knowledge base." It doesn't say whether Sarah asked for that or the model decided it needed it. IAM can't scope permissions by intent. DLP can't distinguish authorized access from autonomous exploration. GRC can't assign accountability.</p>
+  </div>
+
+  <!-- Gap 3 -->
+  <div class="callout callout-bad">
+    <div class="callout-label">Gap 3 — Action Chain Correlation &nbsp;·&nbsp; Affects: SecOps, Data Security, Audit</div>
+    <p><strong>The question: WHICH accesses belong to the same decision sequence?</strong></p>
+    <p>With Power Automate, one flow execution produces a correlated set of actions. You can trace them as a single unit. With an AI agent, five separate API calls appear as five unrelated audit events: "Copilot accessed ServiceNow," "Copilot accessed knowledge base," "Copilot accessed Teams." A SOC analyst investigating an incident sees five disconnected log entries. Nothing ties them together as one reasoning chain. They cannot reconstruct the decision sequence. SIEM correlation rules can't group them. Data security tools can't evaluate the aggregate sensitivity of the combined access.</p>
+  </div>
+
+  <div class="callout callout-good">
+    <div class="callout-label">What's NOT a gap</div>
+    <p><strong>Identity-level distinguishability.</strong> Your sign-in logs already separate agent actions from user actions via the client application field. If your SIEM rules don't parse this field today, start there — it's low-hanging fruit. But don't confuse having this signal with having full security observability. Knowing <em>that</em> an agent acted is not the same as knowing <em>why</em> it acted, <em>whether</em> the user intended it, or <em>which</em> accesses were part of the same sequence. Every security function — IAM, SecOps, DLP, AppSec, GRC — needs answers to those questions, and none of them can get answers from the identity layer alone.</p>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ THE ARCHITECTURE ═══ -->
+  <h2>Where the answers live — and why they can't reach your security stack</h2>
+
+  <p>If the sign-in log isn't the right place to capture decision traceability, intent classification, and action chain correlation — where should they come from?</p>
+
+  <p><strong>The orchestration layer.</strong> This is the code that sits between the LLM and the APIs (Entity E5 in our model). At this layer, the full picture exists momentarily: Sarah's original prompt, the model's reasoning about which tools to call, the sequence of API calls, the data returned, and the final action taken.</p>
+
+  <p>The orchestration layer <em>could</em> log all of this. The question is: does it? And even if it does, can your security stack — your SIEM, your IAM policy engine, your DLP, your audit system — consume those signals?</p>
+
+  <p>Today, the answer to both is mostly no.</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 3 — Three Layers, Two Broken Connections</div>
+
+    <div class="layer-stack">
+      <!-- Layer 1: User Intent -->
+      <div class="layer-box layer-blue">
+        <div class="layer-num">LAYER 1</div>
+        <div class="layer-name">User Intent</div>
+        <div class="layer-desc">The original human request — what the user actually asked for.</div>
+        <div class="layer-has-missing">
+          <div class="lhm-col lhm-has">
+            <div class="lhm-label">✓ Has today</div>
+            <p>Captured in the UI or prompt log</p>
+          </div>
+          <div class="lhm-col lhm-missing">
+            <div class="lhm-label">✗ Missing</div>
+            <p>Not propagated as a structured signal to downstream security tools. Cannot be used in authorization policy, detection rules, or DLP evaluation.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gap -->
+      <div class="layer-gap">
+        <div class="layer-gap-line">
+          <div class="tick"></div>
+          <div class="layer-gap-label">NO STANDARD INTERFACE</div>
+          <div class="tick"></div>
+        </div>
+      </div>
+
+      <!-- Layer 2: Orchestration -->
+      <div class="layer-box layer-accent">
+        <div class="layer-num">LAYER 2</div>
+        <div class="layer-name">Orchestration</div>
+        <div class="layer-desc">Decision chain, tool selection, reasoning sequence — the full picture.</div>
+        <div class="layer-has-missing">
+          <div class="lhm-col lhm-has">
+            <div class="lhm-label">✓ Has today</div>
+            <p>Exists momentarily during execution. Some platforms log partially.</p>
+          </div>
+          <div class="lhm-col lhm-missing">
+            <div class="lhm-label">✗ Missing</div>
+            <p>No consistent logging standard. No interface to emit structured signals to IAM, SIEM, or DLP for policy evaluation and detection.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gap -->
+      <div class="layer-gap">
+        <div class="layer-gap-line">
+          <div class="tick"></div>
+          <div class="layer-gap-label">NO STANDARD INTERFACE</div>
+          <div class="tick"></div>
+        </div>
+      </div>
+
+      <!-- Layer 3: Identity & Access -->
+      <div class="layer-box layer-green">
+        <div class="layer-num">LAYER 3</div>
+        <div class="layer-name">Identity and Access</div>
+        <div class="layer-desc">Authentication, authorization, and access logging — the foundation your security stack builds on.</div>
+        <div class="layer-has-missing">
+          <div class="lhm-col lhm-has">
+            <div class="lhm-label">✓ Has today</div>
+            <p>Distinguishes agent from user (client app field). Enforces OAuth scopes. Logs access events.</p>
+          </div>
+          <div class="lhm-col lhm-missing">
+            <div class="lhm-label">✗ Missing</div>
+            <p>Cannot consume orchestration signals. Makes binary allow/deny decisions without decision context. SIEM, DLP, and audit tools inherit this same blind spot.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="diagram-caption">The identity and access layer (Layer 3) works. It correctly identifies agents and enforces scopes. But every security tool that depends on it — SIEM, DLP, audit systems, GRC platforms — inherits the same limitation: they don't know why the agent is acting, whether the user intended it, or how this access relates to other accesses in the same reasoning chain. Those answers exist in Layer 2, but no standard interface connects them.</div>
+  </div>
+
+  <p>This is the core architectural gap. <strong>Your entire security stack is a consumer of decision context. The orchestration layer is the producer. But no standard interface connects them.</strong></p>
+
+  <p>Traditional automation never needed this interface because the decision logic was static and inspectable outside the execution path. You could audit a Power Automate flow by reading its definition — you didn't need the execution layer to explain itself at runtime.</p>
+
+  <p>AI agents need this interface because the decision logic is dynamic, ephemeral, and exists only at runtime. If the orchestration layer doesn't capture and transmit it, it's gone — and every security function is flying blind.</p>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ THE PUNCHLINE ═══ -->
+  <div class="punchline">
+    <div class="callout-label">The Punchline</div>
+    <p>The agent security problem isn't that your identity infrastructure can't tell agents from users — <strong>it can.</strong></p>
+    <p>The problem is that traditional automation delegated <span class="hl-green">execution of pre-defined decisions</span>, while AI agents delegate <span class="hl-red">the decision-making itself</span>.</p>
+    <p>Same OAuth plumbing. Same audit log format. Same sign-in log entries. <strong>Fundamentally different security observability model.</strong></p>
+    <p>The fix requires connecting the orchestration layer's decision context to your security stack — IAM for authorization, SIEM for detection and correlation, DLP for sensitivity evaluation, and GRC for audit evidence. That interface doesn't exist today in any standardized form.</p>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ ROLE-SPECIFIC TAKEAWAYS ═══ -->
+  <h2>What this means for you</h2>
+
+  <div class="role-grid">
+    <div class="role-card">
+      <div class="role-title">Security Engineer</div>
+      <p>Start parsing the <strong>client application field</strong> in Entra ID sign-in logs and build SIEM correlation rules that distinguish agent-initiated access from user-initiated access. That's your low-hanging fruit. Then push your agent platform vendors for <strong>action chain correlation IDs</strong> — a session or trace ID that ties multiple API calls to a single agent reasoning sequence.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">Security Architect</div>
+      <p>The delegation model needs a <strong>new dimension: actor type.</strong> The same OAuth scope should trigger different policy evaluation depending on whether a deterministic workflow or a non-deterministic model is using it. Design for orchestration-layer signal consumption — your IAM, SIEM, and DLP all need decision context from the agent runtime, not just access events.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">AppSec Engineer</div>
+      <p>Treat agent tool definitions as an <strong>attack surface equivalent to API endpoints.</strong> Each tool binding is a capability the model can invoke — validate that tool-level input sanitization, output filtering, and authorization checks exist in the orchestration layer, not just in the downstream service. Prompt injection via tool inputs is your top threat vector.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">GRC Professional</div>
+      <p>Your control framework needs a <strong>new control category: decision traceability for autonomous systems.</strong> This sits between your existing access control and audit logging controls. It asks: can the organization explain why an automated action was taken, not just that it was authorized? Map this to your existing framework — NIST CSF, ISO 27001, or SOC 2 — as a gap analysis.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">Auditor</div>
+      <p>Your evidence collection must expand beyond identity and access logs. <strong>Request orchestration layer logs</strong> — the reasoning chain, tool invocations, and data accesses that led to each agent action. If the organization can't produce them, that's a finding: insufficient audit trail for autonomous agent actions. Define what "sufficient evidence" means for AI agent decisions in your audit criteria.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ NEXT IN SERIES ═══ -->
+  <h3>Coming next</h3>
+  <p>This post focused on a foundational question: when an AI agent acts on behalf of a user, what can your security stack see and what goes dark? The answer — authentication works, but decision traceability, intent classification, and action chain correlation do not — is the starting point. But the size of these gaps depends on <strong>how the agent is built</strong>. A simple tool-calling agent has a different risk surface than a RAG-augmented agent or a multi-agent orchestration chain. And the risks span AppSec, data security, vulnerability management, and GRC — not just identity. That's what we'll unpack next.</p>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="blog-footer">
+    Securing AI Agents — An Explainer Series &nbsp;·&nbsp; April 2026
+  </div>
+
+</div>
+
+</body>
+</html>
