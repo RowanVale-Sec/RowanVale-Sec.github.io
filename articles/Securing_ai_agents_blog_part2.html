@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Not All AI Agents Are Built the Same. Your Security Controls Assume They Are.</title>
+
+<meta name="description" content="An AI agent is the LLM plus the framework around it — the orchestration code that controls what the model sees, what it can do, and what gets logged. That framework comes in four distinct forms. Each one changes your security posture completely." />
+<meta name="author" content="Shashi" />
+<link rel="canonical" href="https://rowanvale-sec.github.io/articles/Securing_ai_agents_blog_part2.html" />
+
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Not All AI Agents Are Built the Same. Your Security Controls Assume They Are." />
+<meta property="og:description" content="An AI agent is the LLM plus the framework around it — the orchestration code that controls what the model sees, what it can do, and what gets logged. That framework comes in four distinct forms. Each one changes your security posture completely." />
+<meta property="og:url" content="https://rowanvale-sec.github.io/articles/Securing_ai_agents_blog_part2.html" />
+<meta property="og:image" content="https://rowanvale-sec.github.io/assets/images/cover.jpg" />
+<meta property="og:site_name" content="Rowan Vale" />
+<meta property="article:published_time" content="2026-04-24" />
+<meta property="article:author" content="Shashi" />
+<meta property="article:tag" content="AI Security" />
+<meta property="article:tag" content="Agent Frameworks" />
+<meta property="article:tag" content="Orchestration" />
+<meta property="article:tag" content="Enterprise Security" />
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf7f2;
+    --bg-warm: #f5f0e8;
+    --surface: #ffffff;
+    --text: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --text-muted: #5a5a5a;
+    --accent: #c4960a;
+    --accent-light: #fdf6e3;
+    --green: #2d8a56;
+    --green-light: #e8f5ee;
+    --green-bg: #f0faf4;
+    --red: #c0392b;
+    --red-light: #fdf0ee;
+    --red-bg: #fef5f3;
+    --orange: #d4760a;
+    --orange-light: #fef6ec;
+    --blue: #2563eb;
+    --blue-light: #eff4ff;
+    --border: #e5e0d8;
+    --border-strong: #d0c9bd;
+    --code-bg: #2d2d2d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Header ── */
+  .hero {
+    padding: 80px 0 60px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .hero-series {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 20px;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--blue);
+  }
+  .hero-subtitle {
+    font-size: 20px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+  .hero-meta {
+    margin-top: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Prose ── */
+  p { margin-bottom: 24px; color: var(--text-secondary); }
+  p strong { color: var(--text); font-weight: 600; }
+
+  h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 56px 0 20px;
+    line-height: 1.25;
+  }
+  h3 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 36px 0 12px;
+  }
+
+  /* ── Callout Boxes ── */
+  .callout {
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-left: 4px solid;
+  }
+  .callout-insight {
+    background: var(--blue-light);
+    border-color: var(--blue);
+  }
+  .callout-good {
+    background: var(--green-bg);
+    border-color: var(--green);
+  }
+  .callout-bad {
+    background: var(--red-bg);
+    border-color: var(--red);
+  }
+  .callout-warn {
+    background: var(--orange-light);
+    border-color: var(--orange);
+  }
+  .callout-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .callout-insight .callout-label { color: var(--blue); }
+  .callout-good .callout-label { color: var(--green); }
+  .callout-bad .callout-label { color: var(--red); }
+  .callout-warn .callout-label { color: var(--orange); }
+  .callout p { margin-bottom: 0; font-size: 16px; line-height: 1.65; }
+  .callout p + p { margin-top: 12px; margin-bottom: 0; }
+  .callout p strong { color: var(--text); }
+
+  /* ── Diagrams ── */
+  .diagram-container {
+    margin: 40px -40px;
+    padding: 32px 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+  .diagram-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .diagram-caption {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  /* ── Entity Cards ── */
+  .entity-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .entity-card {
+    flex: 1;
+    min-width: 120px;
+    padding: 14px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    text-align: center;
+  }
+  .entity-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .entity-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .entity-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .e-blue { border-top: 3px solid var(--blue); }
+  .e-blue .entity-id { color: var(--blue); }
+  .e-green { border-top: 3px solid var(--green); }
+  .e-green .entity-id { color: var(--green); }
+  .e-orange { border-top: 3px solid var(--orange); }
+  .e-orange .entity-id { color: var(--orange); }
+  .e-accent { border-top: 3px solid var(--accent); }
+  .e-accent .entity-id { color: var(--accent); }
+  .e-muted { border-top: 3px solid var(--text-muted); }
+  .e-muted .entity-id { color: var(--text-muted); }
+  .e-red { border-top: 3px solid var(--red); }
+  .e-red .entity-id { color: var(--red); }
+
+  /* ── Comparison Table ── */
+  .comparison-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+    margin: 20px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .comparison-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 14px 16px;
+    text-align: left;
+    background: var(--bg-warm);
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .comparison-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table .col-flavor { width: 22%; font-weight: 600; color: var(--text); }
+  .comparison-table .col-three { width: 26%; }
+
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .badge-visible { background: var(--green-light); color: var(--green); }
+  .badge-partial { background: var(--orange-light); color: var(--orange); }
+  .badge-gone { background: var(--red-light); color: var(--red); }
+  .badge-owned { background: var(--blue-light); color: var(--blue); }
+
+  /* ── Flavor Cards ── */
+  .flavor-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .flavor-card {
+    padding: 20px 24px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .flavor-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .flavor-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .flavor-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .flavor-examples {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .flavor-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 0;
+  }
+
+  .flavor-raw .flavor-num { background: var(--red-light); color: var(--red); }
+  .flavor-raw .flavor-name { color: var(--red); }
+  .flavor-raw { border-left: 3px solid var(--red); }
+
+  .flavor-generic .flavor-num { background: var(--blue-light); color: var(--blue); }
+  .flavor-generic .flavor-name { color: var(--blue); }
+  .flavor-generic { border-left: 3px solid var(--blue); }
+
+  .flavor-domain .flavor-num { background: var(--orange-light); color: var(--orange); }
+  .flavor-domain .flavor-name { color: var(--orange); }
+  .flavor-domain { border-left: 3px solid var(--orange); }
+
+  .flavor-platform .flavor-num { background: var(--green-bg); color: var(--green); }
+  .flavor-platform .flavor-name { color: var(--green); }
+  .flavor-platform { border-left: 3px solid var(--green); }
+
+  /* ── Layer Diagram ── */
+  .layer-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .layer-box {
+    padding: 20px 24px;
+    border-radius: 8px;
+    border: 1px solid;
+    position: relative;
+  }
+  .layer-box .layer-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .layer-box .layer-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .layer-box .layer-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .layer-blue { border-color: var(--blue); background: var(--blue-light); }
+  .layer-blue .layer-num, .layer-blue .layer-name { color: var(--blue); }
+  .layer-accent { border-color: var(--accent); background: var(--accent-light); }
+  .layer-accent .layer-num, .layer-accent .layer-name { color: var(--accent); }
+  .layer-green { border-color: var(--green); background: var(--green-bg); }
+  .layer-green .layer-num, .layer-green .layer-name { color: var(--green); }
+  .layer-red { border-color: var(--red); background: var(--red-bg); }
+  .layer-red .layer-num, .layer-red .layer-name { color: var(--red); }
+  .layer-orange { border-color: var(--orange); background: var(--orange-light); }
+  .layer-orange .layer-num, .layer-orange .layer-name { color: var(--orange); }
+
+  .layer-gap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
+  }
+  .layer-gap-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .layer-gap-line .tick { width: 2px; height: 10px; background: var(--red); opacity: 0.4; }
+  .layer-gap-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--red);
+    background: var(--red-light);
+    padding: 3px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(192,57,43,0.15);
+  }
+  .layer-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    color: var(--text-muted);
+    font-size: 18px;
+  }
+
+  .layer-has-missing {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .layer-has-missing .lhm-col {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .lhm-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .lhm-has .lhm-label { color: var(--green); }
+  .lhm-missing .lhm-label { color: var(--red); }
+  .lhm-col p { font-size: 13px; margin-bottom: 0; color: var(--text-secondary); }
+
+  /* ── Role Takeaways ── */
+  .role-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .role-card {
+    padding: 20px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .role-card:hover { border-color: var(--blue); }
+  .role-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+  .role-card p {
+    font-size: 14px;
+    margin-bottom: 0;
+    line-height: 1.55;
+  }
+
+  /* ── Code / Log blocks ── */
+  .log-block {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--code-bg);
+    color: #e0e0e0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 16px 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  .log-green { color: #6ddb8a; }
+  .log-red { color: #f87171; }
+  .log-orange { color: #fbbf24; }
+  .log-muted { color: #888; }
+
+  /* ── Divider ── */
+  .section-divider {
+    width: 60px;
+    height: 3px;
+    background: var(--blue);
+    margin: 56px 0;
+    border-radius: 2px;
+  }
+
+  /* ── Arch compare ── */
+  .arch-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .arch-side {
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .arch-side-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .arch-callout {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border-left: 3px solid;
+  }
+  .arch-callout.good { background: var(--green-bg); border-color: var(--green); }
+  .arch-callout.gap { background: var(--red-bg); border-color: var(--red); }
+  .arch-callout.neutral { background: var(--blue-light); border-color: var(--blue); }
+
+  /* ── Estate Map ── */
+  .estate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .estate-card {
+    padding: 16px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .estate-vendor {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .estate-product {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .estate-flavor {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .estate-raw .estate-vendor { color: var(--red); }
+  .estate-raw { border-top: 3px solid var(--red); }
+  .estate-generic .estate-vendor { color: var(--blue); }
+  .estate-generic { border-top: 3px solid var(--blue); }
+  .estate-domain .estate-vendor { color: var(--orange); }
+  .estate-domain { border-top: 3px solid var(--orange); }
+  .estate-platform .estate-vendor { color: var(--green); }
+  .estate-platform { border-top: 3px solid var(--green); }
+
+  /* ── Punchline Box ── */
+  .punchline {
+    margin: 48px -40px;
+    padding: 32px 40px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2520 100%);
+    border-radius: 12px;
+    color: #faf7f2;
+  }
+  .punchline .callout-label { color: var(--blue); }
+  .punchline p { color: #d4cfc7; font-size: 17px; line-height: 1.7; margin-bottom: 16px; }
+  .punchline p:last-child { margin-bottom: 0; }
+  .punchline strong { color: #faf7f2; }
+  .punchline .hl-green { color: #6ddb8a; font-weight: 600; }
+  .punchline .hl-red { color: #f87171; font-weight: 600; }
+  .punchline .hl-orange { color: #fbbf24; font-weight: 600; }
+
+  /* ── Series nav ── */
+  .series-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    background: var(--blue-light);
+    border: 1px solid rgba(37,99,235,0.15);
+    margin: 40px 0;
+    font-size: 14px;
+  }
+  .series-nav-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--blue);
+    flex-shrink: 0;
+  }
+  .series-nav a {
+    color: var(--blue);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .series-nav a:hover { text-decoration: underline; }
+  .series-nav-sep { color: var(--text-muted); }
+
+  /* ── Footer ── */
+  .blog-footer {
+    margin-top: 64px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .blog-footer a { color: var(--blue); text-decoration: none; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 30px; }
+    .diagram-container { margin: 32px -12px; padding: 20px 16px; }
+    .punchline { margin: 40px -12px; padding: 24px 20px; }
+    .entity-row { flex-direction: column; }
+    .role-grid { grid-template-columns: 1fr; }
+    .layer-has-missing { grid-template-columns: 1fr; }
+    .arch-compare { grid-template-columns: 1fr; }
+    .estate-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero { animation: fadeUp 0.8s ease-out; }
+  .diagram-container { animation: fadeUp 0.6s ease-out; }
+
+  /* ── Video Embed ── */
+  .video-embed {
+    margin: 0 0 48px;
+  }
+  .video-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #000;
+  }
+  .video-frame iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .video-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    text-align: center;
+  }
+  .video-caption a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+  .video-caption a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ═══ HERO ═══ -->
+  <div class="hero">
+    <div class="hero-series">Securing AI Agents — An Explainer Series</div>
+    <h1>Not All AI Agents Are Built the Same. <em>Your Security Controls Assume They Are.</em></h1>
+    <div class="hero-subtitle">An AI agent is the LLM plus the framework around it — the orchestration code that controls what the model sees, what it can do, and what gets logged. That framework comes in four distinct forms. Each one changes your security posture completely.</div>
+    <div class="hero-meta">April 2026 &nbsp;·&nbsp; 14 min read &nbsp;·&nbsp; For security engineers, security architects, AppSec, GRC, and auditors</div>
+  </div>
+
+  <!-- ═══ VIDEO ═══ -->
+  <div class="video-embed">
+    <div class="video-frame">
+      <iframe
+        src="https://www.youtube-nocookie.com/embed/VcE31zCk4p8"
+        title="Securing AI Agents — Part 2"
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen></iframe>
+    </div>
+    <div class="video-caption">Prefer YouTube? <a href="https://youtu.be/VcE31zCk4p8" target="_blank" rel="noopener">Watch on YouTube ↗</a></div>
+  </div>
+
+  <!-- ═══ SERIES NAV ═══ -->
+  <div class="series-nav">
+    <span class="series-nav-label">Part 1</span>
+    <span class="series-nav-sep">→</span>
+    <a href="https://rowanvale-sec.github.io/articles/Securing_ai_agents_blog_part1.html">Your Sign-In Logs Already Know It's an Agent — The Gaps Are in the Layers Above</a>
+  </div>
+
+  <!-- ═══ THE HOOK ═══ -->
+  <p>Have you ever wondered why Perplexity gives you a different answer than Claude.ai, even when both are using the same underlying Claude model? Or why Microsoft Copilot — which also calls GPT and Claude — feels nothing like either of them? Same models. Completely different behaviour. The difference is what's between you and the model.</p>
+
+  <p>That layer is the <strong>agent framework</strong>, and Part 1 of this series established that the three gaps that matter — decision traceability, intent classification, action chain correlation — all live there. Your identity layer correctly identifies agent traffic. It just can't see why the agent did what it did. <strong>This article maps the framework layer.</strong> Not to tell you which framework is best, but to show you that there isn't one of them — there are four distinct types running in your enterprise right now, each with different security properties — and what you can actually enforce at design time, at runtime, and after the fact depends entirely on which type you're dealing with.</p>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ SECTION 1 — WHAT AN AGENT ACTUALLY IS ═══ -->
+  <h2>What "agent" actually means — and what the framework controls</h2>
+
+  <p><strong>An AI agent is the LLM plus the framework around it. The framework is the orchestration code wrapped around the LLM.</strong> When HuggingFace open-sources smolagents, when Microsoft ships their Agent Framework, when Anthropic publishes the Claude Agent SDK — these toolkits are the framework, not the agent. Concretely: when you instantiate smolagents' <code style="font-family: 'JetBrains Mono', monospace; font-size: 15px; background: var(--bg-warm); padding: 2px 6px; border-radius: 4px;">CodeAgent</code> with a model and a set of tools, that running instance — the LLM together with the orchestration code wrapping it — is the agent. The model is the brain; the framework is the nervous system; the agent is the organism. This article uses <em>agent</em> for the complete system and <em>agent framework</em> for the orchestration toolkit alone — consistent with how Anthropic, HuggingFace, and OpenAI all define the terms. In Part 1's terms, this entire layer is <strong>E5</strong>, and it's where every architectural choice that affects your security posture is made.</p>
+
+  <p>Here is what the framework concretely controls — and why each of these is a security surface, not just an engineering concern.</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 1 — What the Agent Framework Controls</div>
+
+    <div class="entity-row">
+      <div class="entity-card e-blue">
+        <div class="entity-id">Context</div>
+        <div class="entity-name">What the model sees</div>
+        <div class="entity-desc">System prompt, conversation history, and retrieved documents assembled by the framework pipeline. Some steps are deterministic — applying a prompt template, fetching history. Others involve their own model calls — embedding queries, retrieving and reranking document chunks. The primary model reasons on whatever the pipeline assembles. It has no visibility into what was excluded or how retrieval decisions were made.</div>
+      </div>
+      <div class="entity-card e-orange">
+        <div class="entity-id">Tools</div>
+        <div class="entity-name">What the model can do</div>
+        <div class="entity-desc">Tool definitions, permissions, and execution scope. The framework presents available tools to the model, validates tool call requests before they execute, and handles results. The model decides which tool to call. The framework decides whether that call is permitted to run — and whether it gets logged.</div>
+      </div>
+      <div class="entity-card e-accent">
+        <div class="entity-id">Routing</div>
+        <div class="entity-name">Which model runs</div>
+        <div class="entity-desc">In multi-model pipelines, the framework manages which model handles each step — sometimes using a lightweight LLM call to classify the task first. Perplexity and Copilot both do this. The framework controls the pipeline structure. Each model does the reasoning within its own step.</div>
+      </div>
+      <div class="entity-card e-green">
+        <div class="entity-id">Logging</div>
+        <div class="entity-name">What gets recorded</div>
+        <div class="entity-desc">The framework is the only place in the stack where the full sequence — assembled prompt, tool calls, model outputs, routing decisions — passes through in one place. If it doesn't emit that context to your security stack, it is gone after inference. No other layer can reconstruct it.</div>
+      </div>
+    </div>
+
+    <div class="diagram-caption">Your security stack — SIEM, DLP, IAM, audit — sits below all of this. It sees the access events that result from the framework's decisions. It does not see the decisions themselves unless the framework explicitly emits them.</div>
+  </div>
+
+  <p>Perplexity is a useful illustration. When you query Perplexity, their custom framework intercepts your request before any primary model call: a lightweight LLM may classify the query, the framework fetches live web results, assembles a grounded prompt with those results injected, selects which primary model is best suited, and on the way out enforces citation formatting. Microsoft Copilot does the same at enterprise scale, with its orchestrator grounding queries against Microsoft Graph (your emails, calendar, files, org structure) and routing to GPT, Claude, or Microsoft's own proprietary models depending on the task. <strong>The model is the brain at every step. What the framework controls is what each model sees, which model runs, and how outputs are shaped before they reach you.</strong> When that agent accesses sensitive data, your security team sees a sign-in log entry. They do not see the classification step, model selection, prompt assembly, or tool call sequence. The framework coordinated all of it. Your SIEM got the access event. The reasoning is gone.</p>
+
+  <p>Now scale that to your enterprise. You are not dealing with one framework. You are dealing with several — built by different vendors, using different architectural approaches, exposing different levels of telemetry. That variation is the security problem this article addresses.</p>
+
+  <div class="callout callout-insight">
+    <div class="callout-label">A note on MCP</div>
+    <p>Model Context Protocol is the connective tissue beneath all four agent types — it's how frameworks expose tools to models. MCP shows up in F1, F2, and F3 alike, but its security properties are framework-dependent: a framework that uses MCP only inherits MCP's controls if the framework actually emits and enforces them. We address MCP as a cross-cutting concern in Part 3 of this series.</p>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ SECTION 2 — TAXONOMY ═══ -->
+  <h2>Four ways agents are built — and why it matters for security</h2>
+
+  <p>The taxonomy that follows classifies agents by your <em>relationship</em> to the framework, not by who originally built it. From a security perspective, "framework you can instrument" is a fundamentally different posture than "framework someone else operates." Perplexity's engineers built their own custom framework on raw APIs — that's an F1-style build for them, but for your enterprise consuming Perplexity Enterprise, it's F4 because you cannot inspect or modify it. <strong>What matters is who can place controls, not who wrote the code.</strong></p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 2 — Four Ways You'll Encounter Agents in Your Estate</div>
+
+    <div class="flavor-stack">
+
+      <div class="flavor-card flavor-raw">
+        <div class="flavor-header">
+          <span class="flavor-num">F1</span>
+          <span class="flavor-name">Custom-Built Agent on Raw API</span>
+        </div>
+        <div class="flavor-examples">Examples: Internal tool calling Anthropic API directly · In-house chatbot on Azure OpenAI · Customer-facing LLM features built on raw API calls · Lambda functions invoking Claude or GPT directly</div>
+        <p class="flavor-desc">Your team calls the LLM API directly and builds the agent framework themselves: context assembly, tool definitions, routing logic, memory management, logging. There is no published framework providing structure. The application code <em>is</em> the framework. F1 spans a wide spectrum — from a thin wrapper around an API call to a serious custom orchestrator with full instrumentation. Both look identical in your network logs. The security posture is whatever your engineering team deliberately built. When teams ship F1 quickly to deliver a feature, governance is almost always opt-in — and almost always skipped.</p>
+      </div>
+
+      <div class="flavor-card flavor-generic">
+        <div class="flavor-header">
+          <span class="flavor-num">F2</span>
+          <span class="flavor-name">Agent Built on a Generic Framework</span>
+        </div>
+        <div class="flavor-examples">Examples: Agent built with Microsoft Agent Framework · Claude Agent SDK · Google ADK · smolagents · LangGraph · AutoGen · CrewAI</div>
+        <p class="flavor-desc">Your team uses a published framework — smolagents, LangGraph, Microsoft Agent Framework — to build their agent. The framework provides structure: memory management, tool invocation patterns, multi-agent coordination, workflow primitives. The LLM is still the reasoning brain at each step. The framework is what coordinates those steps. Crucially, these frameworks expose tracing hooks, run IDs, and step-level logging that <em>can</em> be wired to your security stack — but they are not on by default. You get the plumbing. You have to connect it.</p>
+      </div>
+
+      <div class="flavor-card flavor-domain">
+        <div class="flavor-header">
+          <span class="flavor-num">F3</span>
+          <span class="flavor-name">Proprietary Domain-Specific Agent</span>
+        </div>
+        <div class="flavor-examples">Examples: SAP Joule · Salesforce Agentforce · ServiceNow Now Assist · Workday Illuminate</div>
+        <p class="flavor-desc">Enterprise SaaS vendors have built their own proprietary frameworks on top of raw LLM APIs — not using Microsoft Agent Framework or smolagents, but their own purpose-built infrastructure. Joule's framework understands ERP workflows. Agentforce's framework understands CRM data models and Topics. The domain knowledge is baked into the framework design itself, not into the model. Governance is partially present but opaque — you cannot inspect the framework logic, and what telemetry the vendor exposes varies significantly by product and pricing tier.</p>
+      </div>
+
+      <div class="flavor-card flavor-platform">
+        <div class="flavor-header">
+          <span class="flavor-num">F4</span>
+          <span class="flavor-name">Platform-Managed Agent</span>
+        </div>
+        <div class="flavor-examples">Examples: Microsoft 365 Copilot · GitHub Copilot · Google Workspace Duet · Perplexity Enterprise</div>
+        <p class="flavor-desc">The framework is owned and operated entirely by the platform vendor. You are a consumer of their agent, not its builder. Model selection, context injection, tool routing, and action logging all happen inside infrastructure you don't control and cannot inspect. Your governance options are limited to what the vendor exposes through their admin console, compliance APIs, and audit log exports. The vendor's security posture <em>becomes</em> your security posture — for better or worse.</p>
+      </div>
+
+    </div>
+
+    <div class="diagram-caption">These four patterns coexist in almost every enterprise. F1 agents for internal tools, F2 agents built by engineering teams using frameworks, F3 agents embedded in enterprise SaaS, and F4 platform-managed agents used by all knowledge workers. Each is built differently. Each has different security properties. None of them are governed by the same controls.</div>
+  </div>
+
+  <div class="callout callout-bad">
+    <div class="callout-label">The F4 Trap</div>
+    <p>Because F4 platforms manage their frameworks internally, security teams often treat them as "covered." They are not covered — they are <strong>partially covered by someone else's framework design</strong>, which may not align with your organization's risk posture, compliance requirements, or incident response procedures. The vendor's controls satisfy the vendor's defaults. They do not automatically satisfy yours. This is the single most common mistake in AI agent governance today.</p>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ SECTION 3 — THE ENTERPRISE REALITY ═══ -->
+  <h2>The enterprise reality: you have all four agent types running right now</h2>
+
+  <p>Here's what makes this hard in practice. The question is never "which type of agent are we dealing with?" It's always "which <em>combination</em> are we managing simultaneously?" Almost every enterprise above a certain scale has agents running across all four types at the same time — often without a complete inventory of them.</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 3 — A Typical Enterprise Agent Estate Across All Four Types</div>
+
+    <div class="estate-grid">
+      <div class="estate-card estate-platform">
+        <div class="estate-vendor">Microsoft</div>
+        <div class="estate-product">Microsoft 365 Copilot</div>
+        <div class="estate-flavor">F4 — Platform-Managed &nbsp;·&nbsp; All knowledge workers</div>
+      </div>
+      <div class="estate-card estate-domain">
+        <div class="estate-vendor">Salesforce</div>
+        <div class="estate-product">Agentforce</div>
+        <div class="estate-flavor">F3 — Domain-Specific &nbsp;·&nbsp; Sales and support teams</div>
+      </div>
+      <div class="estate-card estate-domain">
+        <div class="estate-vendor">SAP</div>
+        <div class="estate-product">Joule</div>
+        <div class="estate-flavor">F3 — Domain-Specific &nbsp;·&nbsp; Finance and HR teams</div>
+      </div>
+      <div class="estate-card estate-generic">
+        <div class="estate-vendor">Internal — Engineering</div>
+        <div class="estate-product">Custom Agents on Azure AI</div>
+        <div class="estate-flavor">F2 — Generic Framework &nbsp;·&nbsp; Dev teams, data teams</div>
+      </div>
+      <div class="estate-card estate-platform">
+        <div class="estate-vendor">GitHub</div>
+        <div class="estate-product">GitHub Copilot</div>
+        <div class="estate-flavor">F4 — Platform-Managed &nbsp;·&nbsp; All engineers</div>
+      </div>
+      <div class="estate-card estate-raw">
+        <div class="estate-vendor">Internal — Product</div>
+        <div class="estate-product">LLM-Powered Features</div>
+        <div class="estate-flavor">F1 — Raw API &nbsp;·&nbsp; Customer-facing product</div>
+      </div>
+    </div>
+
+    <div class="diagram-caption">Six agent deployments. Four different agent types. Six completely different security postures — none visible through a single governance console. And this is conservative. Shadow agents built on F1 and F2 by individual teams are almost certainly present and uncounted.</div>
+  </div>
+
+  <p>The CISO looking at this estate has a fragmentation problem that no existing governance tool fully solves. <strong>Purview covers what Microsoft 365 Copilot's framework exposes. Salesforce Shield covers what Agentforce's framework exposes. SAP's audit log covers what Joule's framework exposes. Your SIEM covers what your custom agents emit.</strong> But none of them speak a common language, and none give you a unified view across all four types.</p>
+
+  <p>Your security posture for AI agents is only as strong as your weakest agent — and that's almost certainly one of the F1 or F2 agents you don't know about, deployed by a developer over a weekend.</p>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ SECTION 4 — WHAT TO DO PER FLAVOR ═══ -->
+  <h2>What each agent type demands from your security team</h2>
+
+  <p>Those six deployments produce essentially identical-looking access events in your SIEM — the difference is the depth of context behind each one, determined by which type produced it. Generic controls applied uniformly miss this entirely. They also miss something more fundamental: most agent security guidance today focuses on collecting logs and forwarding to a SIEM. Securing AI agents requires action at three distinct points in the lifecycle, and each agent type changes <em>where</em> you have leverage.</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 4 — The Three Security Pillars for AI Agents</div>
+
+    <div class="entity-row">
+      <div class="entity-card e-blue">
+        <div class="entity-id">Pillar 1</div>
+        <div class="entity-name">Secure by Design</div>
+        <div class="entity-desc"><strong>Before the agent runs.</strong> Start with the architectural question: <em>does this need to be agentic at all?</em> Anthropic's guidance is direct — workflows (LLMs orchestrated through predefined code paths) are different from agents (LLMs dynamically directing their own process), and you should prefer workflows wherever the path is predictable. Use DAG and graph patterns (LangGraph's StateGraph, Microsoft Agent Framework's Workflow) to bound where agentic decision-making is allowed; use classifier-then-handler routing to keep the LLM in the lane-picking role while deterministic code does the driving. Every step that's deterministic code instead of LLM-decided is a step prompt injection cannot redirect. <em>Then</em> apply scope minimization on what remains: minimum tool surface, minimum data scope, per-agent identities with narrowly scoped credentials, prompt-injection-resistant system prompt design, vetted MCP servers and tool definitions, pinned framework and model versions, HITL checkpoints for irreversible actions, red-teaming before deployment.</div>
+      </div>
+      <div class="entity-card e-orange">
+        <div class="entity-id">Pillar 2</div>
+        <div class="entity-name">Runtime Security</div>
+        <div class="entity-desc"><strong>While the agent is executing.</strong> Enforce policy at the moment of decision: intercept tool calls and allow/deny against a policy engine before they execute. Detect prompt injection in incoming context. Filter outputs for sensitive data and unsafe content. Apply rate limits and resource ceilings. Sandbox code-execution tools. Trip circuit breakers on anomalous behavior. Pause for approval on high-impact actions. This is the layer that prevents a bad decision from becoming a bad outcome.</div>
+      </div>
+      <div class="entity-card e-green">
+        <div class="entity-id">Pillar 3</div>
+        <div class="entity-name">Security Operations</div>
+        <div class="entity-desc"><strong>After the agent acts.</strong> Capture the full reasoning trace — assembled prompt, model response, tool calls, results — with session IDs that correlate multi-step sequences. Forward to your SIEM. Run output classification through DLP. Build detections for agentic-specific patterns: credential abuse by an agent, autonomous access escalation, anomalous tool sequences. Establish incident response procedures that include "shut the agent down" as a discrete action.</div>
+      </div>
+    </div>
+
+    <div class="diagram-caption">A complete agent security posture requires action at all three pillars. Most enterprises today address only the third — and only partially. Skipping pillars 1 and 2 means the only thing standing between a compromised agent and the blast radius is whatever the framework happened to enforce by default, which for most frameworks is nothing.</div>
+  </div>
+
+  <p>Now overlay the agent types:</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Visual 5 — Where Your Leverage Lives, by Agent Type</div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th class="col-flavor">Type</th>
+          <th class="col-three">Secure by Design</th>
+          <th class="col-three">Runtime Security</th>
+          <th class="col-three">Security Operations</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-flavor">F1 — Custom-Built</td>
+          <td><span class="badge badge-owned">You own it</span><br><br>Threat model, tool scoping, system prompt design, identity scoping, HITL, red-teaming — all yours to do or skip. No defaults inherited from a published framework.</td>
+          <td><span class="badge badge-owned">You build it</span><br><br>Tool-call interception, output filtering, rate limits, sandboxing — all custom code. Either you build a runtime guardrail layer or there is none.</td>
+          <td><span class="badge badge-owned">You instrument it</span><br><br>No telemetry by default. Prompt logs, tool call captures, session IDs — entirely application-level engineering.</td>
+        </tr>
+        <tr>
+          <td class="col-flavor">F2 — Framework-Built</td>
+          <td><span class="badge badge-partial">Shared</span><br><br>Framework provides patterns (tool registration, memory primitives, HITL hooks). You still configure what tools the agent can call, what scopes it has, what prompts it uses. Defaults are usually permissive.</td>
+          <td><span class="badge badge-partial">Plug it in</span><br><br>Framework hooks let you inject runtime guardrails — Agent Governance Toolkit, framework-native middleware, custom policy engines. The hooks are there. Most deployments don't connect them.</td>
+          <td><span class="badge badge-partial">Wire it up</span><br><br>Trace events, run IDs, step-level logging are emitted. You configure trace sinks and connect to your SIEM. Not on by default.</td>
+        </tr>
+        <tr>
+          <td class="col-flavor">F3 — Domain-Specific</td>
+          <td><span class="badge badge-partial">Configuration only</span><br><br>You configure what the vendor exposes — which Topics, skills, or connectors are enabled, what data scopes, which approval workflows. The agent's design decisions belong to the vendor.</td>
+          <td><span class="badge badge-gone">Vendor-controlled</span><br><br>Whatever guardrails the vendor's framework enforces are what you get. Your runtime control is limited to what their admin console exposes.</td>
+          <td><span class="badge badge-partial">Vendor-exported</span><br><br>You consume what the vendor logs and exports. Coverage and tier-gating vary widely.</td>
+        </tr>
+        <tr>
+          <td class="col-flavor">F4 — Platform-Managed</td>
+          <td><span class="badge badge-partial">Admin console only</span><br><br>Sensitivity labels, indexed data scope, agent-level permissions — whatever the vendor surfaces in admin tooling. The agent's architecture is the vendor's.</td>
+          <td><span class="badge badge-gone">Vendor-controlled</span><br><br>Runtime enforcement is entirely inside the vendor's infrastructure. Your only runtime lever is disabling features or revoking access.</td>
+          <td><span class="badge badge-partial">Platform exports</span><br><br>Purview, GitHub Audit Log, etc. Best-in-class for F4 (Microsoft) is the audit ceiling for the rest of the industry.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="diagram-caption">For F1 and F2, your leverage lives in all three pillars. For F3 and F4, two of the three pillars are already decided by the vendor, and your job is to assess what they decided and decide whether it's enough.</div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Shadow Agent Risk</div>
+    <p>F1 and F2 are the fastest types to deploy without formal approval — and the matrix above shows why that matters. For these types, all three pillars are <em>your</em> responsibility. When a developer ships a Lambda calling the Anthropic API, or a data scientist deploys a LangGraph agent over a weekend, none of the three pillars get built. <strong>Every uncounted F1 or F2 agent is one with nothing on any of the three pillars — no design review, no runtime guardrails, no telemetry. Inventory completeness is the prerequisite for security work to even begin.</strong></p>
+  </div>
+
+  <h3>F1 — Custom-Built Agent: You own the whole stack, no excuses</h3>
+
+  <div class="callout callout-good">
+    <div class="callout-label">F1 Baseline — All Three Pillars</div>
+    <p><strong>Secure by design:</strong> Start with the architecture. Decide which parts of the workflow actually need agentic decision-making and which can be deterministic code or a fixed graph — Anthropic's guidance is to prefer workflows over agents wherever the path is predictable, and that guidance applies here. Use a DAG or state graph to bound where the LLM is allowed to make decisions; let deterministic code drive the rest. Threat model the resulting agentic system with the same rigor as a public API. Define the smallest possible tool surface; deny-by-default for new tools. Use per-agent OAuth identities with narrowly scoped permissions. Design the system prompt to resist prompt injection (delimiters, role separation, output schema constraints). Define which actions require human approval before execution. Red-team prompt injection and tool misuse before going to production.</p>
+    <p><strong>Runtime security:</strong> Intercept every tool call before execution and evaluate against a policy. Sandbox code-execution tools (Wasm, gVisor, isolated containers). Filter model outputs through DLP before they reach the user. Apply rate limits per session and per tool. Implement a kill switch that any on-call engineer can trip in under a minute.</p>
+    <p><strong>Security operations:</strong> Log the full prompt, every tool call (name, parameters, response), and the model's final output, with a session ID tying them together. Forward to your SIEM with agentic-specific detection rules. The reasoning exists only at inference time — if you don't capture it then, it is gone.</p>
+  </div>
+
+  <h3>F2 — Framework-Built Agent: Configure, enforce, and instrument what the framework exposes</h3>
+
+  <div class="callout callout-good">
+    <div class="callout-label">F2 Baseline — All Three Pillars</div>
+    <p><strong>Secure by design:</strong> Use the framework's workflow primitives, not just its agent primitives. LangGraph's StateGraph, Microsoft Agent Framework's Workflow, and OpenAI Agents SDK's handoff functions all let you express most of the control flow as a deterministic graph with agentic decisions only at specific nodes — that's a much smaller attack surface than a free-roaming agent loop. Use the framework's tool registration with explicit scopes — never auto-register all available tools. Configure per-agent identity (most frameworks support this; most teams use shared service principals anyway). Pin framework versions and model versions. Vet every MCP server and external tool the agent can call. Use the framework's HITL primitives (LangGraph's interrupt-and-resume, OpenAI Agents SDK's handoff approvals) for sensitive actions.</p>
+    <p><strong>Runtime security:</strong> This is where F2's leverage is highest. Microsoft's Agent Governance Toolkit (open-source, MIT, released April 2026) plugs into Microsoft Agent Framework, LangChain, LangGraph, CrewAI, Google ADK, and OpenAI Agents SDK via their native extension points. Its Agent OS component is a sub-millisecond policy engine that intercepts every agent action before execution. Agent Mesh provides DID + Ed25519 cryptographic agent identity with the Inter-Agent Trust Protocol. Agent Runtime provides ring-isolated execution. Agent SRE adds circuit breakers and SLO enforcement. The toolkit maps to all ten OWASP Agentic Top 10 risks. <strong>If your organization is building agents on F2 frameworks, this is one of the fastest paths to structured runtime enforcement.</strong></p>
+    <p><strong>Security operations:</strong> Configure the framework's trace sink to forward to your SIEM. Microsoft Agent Framework emits per-step trace events. Claude Agent SDK exposes MCP connections, tool allowlists, and a hooks system. smolagents exposes full reasoning traces. LangGraph checkpoints by node. The hooks exist; most deployments leave them disconnected. The first question for any F2 agent: what trace sink is configured, and where are run IDs being collected?</p>
+  </div>
+
+  <h3>F3 — Domain-Specific Agent: Configure aggressively, enforce contractually, log what's exported</h3>
+
+  <p>You cannot change SAP Joule's runtime guardrails or Salesforce Agentforce's framework logic. What you can shape is configuration, contracts, and what you do with the exports.</p>
+
+  <p><strong>Secure by design:</strong> Treat vendor admin configuration as a security control, not an enablement task. Disable Topics, skills, or connectors you don't need. Apply data-scope restrictions (Salesforce permission sets, SAP authorization objects) so the agent inherits only the access required. Require approval workflows for sensitive actions where the vendor exposes them. Document which guardrails the vendor enforces in their framework and which you've enabled — that's your residual risk register.</p>
+
+  <p><strong>Runtime security:</strong> You have almost no direct lever here. Your contractual leverage is the substitute. Push vendors on: what runtime policy controls exist (allowlists, rate limits, kill switches), what triggers a circuit breaker, who can stop a misbehaving agent, and how fast.</p>
+
+  <p><strong>Security operations:</strong> Audit-export questions to ask every F3 vendor:</p>
+
+  <div class="log-block"><span class="log-green">VENDOR AUDIT ASSESSMENT — F3 DOMAIN-SPECIFIC AGENTS</span>
+
+<span class="log-orange">Decision Traceability</span>
+<span class="log-muted">→</span> Does your audit log record the reasoning context, or only the outcome?
+<span class="log-muted">→</span> Can we retrieve the model's tool call sequence for a given agent session?
+<span class="log-muted">→</span> What is the retention period for agent reasoning traces?
+
+<span class="log-orange">Intent Classification</span>
+<span class="log-muted">→</span> Does your log distinguish user-directed from model-initiated data access?
+<span class="log-muted">→</span> When an agent autonomously accesses additional resources, is that flagged separately?
+
+<span class="log-orange">Action Chain Correlation</span>
+<span class="log-muted">→</span> Is there a session or trace ID that groups multi-step agent actions?
+<span class="log-muted">→</span> Can that ID be exported to a SIEM in real time or near real time?
+<span class="log-muted">→</span> What tier is required for full audit log access?</div>
+
+  <p>If a vendor can't answer these questions, treat that as a finding. The absence of agent-level runtime controls and telemetry is a gap in your ability to prevent and investigate incidents involving that agent.</p>
+
+  <h3>F4 — Platform-Managed Agent: Configure to the maximum, accept the rest as residual risk</h3>
+
+  <p><strong>Secure by design:</strong> Sensitivity labels, indexed data scope, conditional access policies, agent-level permissions in admin tooling — these are your only design-time levers. Configure them to the maximum the platform allows. For Microsoft 365 Copilot specifically, sensitivity labels and Purview DLP policies inherited by Copilot are the closest you get to design-time control.</p>
+
+  <p><strong>Runtime security:</strong> You have none directly. The vendor enforces (or doesn't enforce) policy in their infrastructure. Your only runtime lever is disabling the agent or revoking access — a binary, not a control.</p>
+
+  <p><strong>Security operations:</strong> Maximize what the vendor exposes. Configure Purview audit forwarding to your SIEM. Enable GitHub Copilot audit logs. Establish a documented baseline of "sufficient audit evidence" for each platform <em>before</em> an incident forces the question. Document vendor coverage gaps as residual risk in your AI system registry — don't let "the vendor handles it" stand in for a control mapping.</p>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ PUNCHLINE ═══ -->
+  <div class="punchline">
+    <div class="callout-label">The Punchline</div>
+    <p>There isn't one agent framework. <strong>There are four distinct types running in your enterprise right now, and one-size-fits-all controls fit none of them.</strong> The shape of your security work — what you can enforce at design time, intercept at runtime, and capture afterwards — depends entirely on which type you're dealing with.</p>
+    <p>Whichever you're dealing with, the question to ask first is the same: <span class="hl-orange">do we have controls at all three pillars, or only at the third?</span> Most enterprises answer "only at the third, and only partially." Closing that gap — type by type, pillar by pillar — is the work this series exists to enable.</p>
+    <p><strong>Start with your inventory.</strong> You cannot govern what you haven't counted.</p>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ═══ ROLE-SPECIFIC TAKEAWAYS ═══ -->
+  <h2>What this means for you</h2>
+
+  <div class="role-grid">
+    <div class="role-card">
+      <div class="role-title">Security Engineer</div>
+      <p>Build an <strong>agent inventory</strong> before anything else, classified by type (F1–F4). For each F1 and F2 agent, audit all three pillars: <em>secure by design</em> (tool scope, identity scope, system prompt review), <em>runtime guardrails</em> (is anything intercepting tool calls before execution?), and <em>SecOps</em> (are prompts, tool calls, and session IDs being logged?). Pillar 2 — runtime guardrails — is where most teams have nothing in place at all.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">Security Architect</div>
+      <p>Design <strong>type-specific security requirements across all three pillars</strong>, not a single uniform standard. For F1/F2, secure-by-design starts with an architecture choice: where does the system actually need agentic decision-making, and where can deterministic graphs or workflows do the work? That choice shrinks the attack surface more than any runtime guardrail. From there: tool allowlists, scoped identities, HITL checkpoints; runtime enforcement requirements (policy engine, sandboxing, kill switch); observability specs. For F3/F4: configuration baselines for vendor admin tooling, contractual requirements for runtime controls, and minimum audit export thresholds. One policy applied uniformly across all four types and all three pillars is unenforceable.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">AppSec Engineer</div>
+      <p>For F1 and F2 agents, treat <strong>tool definitions as a primary attack surface</strong> — equivalent to public API endpoints. Each tool binding is a capability the model can invoke autonomously. At <em>design time</em>: validate input/output schemas, enforce per-tool authorization, deny-by-default. At <em>runtime</em>: intercept calls, sandbox code execution, filter outputs through DLP. Red-team prompt injection and tool misuse before production. For F3 and F4, assess whether the vendor's tool governance prevents overprivileged model access to backend systems.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">GRC Professional</div>
+      <p>Add <strong>agent type</strong> as a classification dimension in your AI system registry, then map controls across all three pillars per type. For F1/F2, your control evidence is internal: secure-by-design artifacts (threat models, tool scoping decisions), runtime configuration (policy engine deployment), audit logs. For F3/F4, your evidence is vendor-supplied: configuration attestations, vendor SOC reports covering their runtime controls, audit log exports. Where the vendor doesn't provide evidence for a pillar, document it as residual risk — don't let "the vendor handles it" substitute for a control mapping.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">Auditor</div>
+      <p>Your evidence scope <strong>depends on agent type and pillar</strong>. For F1/F2: request threat models and tool-scoping decisions (design), policy engine configuration and runtime enforcement evidence (runtime), and prompt + tool call + session ID logs (SecOps). For F3/F4: request vendor configuration baselines, vendor attestations of runtime controls, and audit log exports at the contracted tier. The "right" evidence is different at each pillar; asking only for logs misses two-thirds of the control surface.</p>
+    </div>
+    <div class="role-card">
+      <div class="role-title">CISO</div>
+      <p>The hardest question in the next 12 months is not "are we using AI agents?" It's <strong>"for each agent in our estate, do we have controls at all three security pillars — design, runtime, and operations — or only at the third?"</strong> Shadow F1 and F2 agents typically have nothing on any pillar. Inventory first; then assess each agent against all three pillars; then close gaps in priority order — runtime guardrails are usually the highest-leverage missing piece.</p>
+    </div>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="blog-footer">
+    Securing AI Agents — An Explainer Series &nbsp;·&nbsp; April 2026
+  </div>
+
+</div>
+
+</body>
+</html>

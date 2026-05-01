@@ -1,28 +1,369 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Rowan Vale's Blog</title>
-  <meta name="description" content="Writing on AI security, economics, and strategy.">
-  <link rel="stylesheet" href="assets/css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rowan Vale — Notes on AI Security, Architecture, and Macroeconomics</title>
+<meta name="description" content="Writing on AI security, enterprise architecture, and macroeconomics by Shashi.">
+<link rel="canonical" href="https://rowanvale-sec.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rowan Vale — Notes on AI Security, Architecture, and Macroeconomics">
+<meta property="og:description" content="Writing on AI security, enterprise architecture, and macroeconomics.">
+<meta property="og:url" content="https://rowanvale-sec.github.io/">
+<meta property="og:site_name" content="Rowan Vale">
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf7f2;
+    --bg-warm: #f5f0e8;
+    --surface: #ffffff;
+    --text: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --text-muted: #5a5a5a;
+    --accent: #c4960a;
+    --accent-light: #fdf6e3;
+    --green: #2d8a56;
+    --green-bg: #f0faf4;
+    --red: #c0392b;
+    --red-light: #fdf0ee;
+    --orange: #d4760a;
+    --orange-light: #fef6ec;
+    --blue: #2563eb;
+    --blue-light: #eff4ff;
+    --border: #e5e0d8;
+    --border-strong: #d0c9bd;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    padding: 80px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 56px;
+  }
+  .site-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 18px;
+  }
+  .site-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 46px;
+    font-weight: 900;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .site-title em { font-style: italic; color: var(--blue); }
+  .site-tagline {
+    font-size: 19px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .site-nav {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+  .site-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    padding: 6px 0;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .site-nav a:hover {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+    text-decoration: none;
+  }
+  .site-nav svg { flex-shrink: 0; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 64px; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .section-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+  .section-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.25;
+  }
+  .section-blurb {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    margin-left: 36px;
+  }
+
+  /* ── Series block ── */
+  .series-block {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    border-radius: 10px;
+    background: var(--surface);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+  }
+  .series-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 6px;
+  }
+  .series-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  .series-summary {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .series-parts {
+    list-style: none;
+    border-top: 1px solid var(--border);
+    padding-top: 4px;
+  }
+  .series-parts li {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .series-parts li:last-child { border-bottom: none; }
+  .part-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-light);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  .part-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .part-title a { color: var(--text); }
+  .part-title a:hover { color: var(--blue); text-decoration: none; }
+  .part-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    line-height: 1.55;
+  }
+  .part-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+  }
+
+  /* ── Article cards (standalone) ── */
+  .article-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .article-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    padding: 20px 24px;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .article-card:hover {
+    border-color: var(--accent);
+  }
+  .article-title {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.35;
+    margin-bottom: 6px;
+  }
+  .article-title a { color: var(--text); }
+  .article-title a:hover { color: var(--accent); text-decoration: none; }
+  .article-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+  .article-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Footer ── */
+  .site-footer {
+    margin-top: 80px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .site-title { font-size: 32px; }
+    .site-nav { gap: 16px; flex-wrap: wrap; }
+    .section-blurb { margin-left: 0; }
+    .series-block { padding: 20px; }
+  }
+
+  /* ── Animation ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .site-header, .section { animation: fadeUp 0.6s ease-out; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Shashi</h1>
-    <p>Notes on AI security, enterprise architecture, and macroeconomics.</p>
+
+<div class="container">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="site-header">
+    <div class="site-eyebrow">Rowan Vale</div>
+    <h1 class="site-title">Shashi</h1>
+    <p class="site-tagline">Notes on AI security, enterprise architecture, and macroeconomics.</p>
+    <nav class="site-nav">
+      <a href="about.html" aria-label="About">
+        <svg class="section-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path>
+        </svg>
+        About
+      </a>
+    </nav>
   </header>
-  <main>
-    <h2>Articles</h2>
-    <ul>
-      <li>
-        <a href="articles/Securing_ai_agents_blog_part1.html">Your Sign-In Logs Already Know It's an Agent — The Gaps Are in the Layers Above</a>
-        <time datetime="2026-04-19">April 19, 2026</time>
-      </li>
-      <li>
-        <a href="articles/Cowork-Resume-Builder.html">Build a Compounding Resume System with Claude Cowork</a>
-        <time datetime="2026-04-18">April 18, 2026</time>
+
+  <!-- ═══ SERIES ═══ -->
+  <section class="section">
+    <div class="section-header">
+      <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: var(--blue);">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+      </svg>
+      <h2 class="section-title">Series</h2>
+    </div>
+    <p class="section-blurb">Multi-part deep dives on a single subject.</p>
+
+    <article class="series-block">
+      <div class="series-meta">Explainer Series · In progress</div>
+      <h3 class="series-name">Securing AI Agents</h3>
+      <p class="series-summary">When an AI agent acts on behalf of a user, what can your security stack actually see — and where does the audit trail go dark? A series for security engineers, architects, AppSec, GRC, and auditors.</p>
+      <ol class="series-parts">
+        <li>
+          <span class="part-tag">Part 1</span>
+          <span class="part-title"><a href="articles/Securing_ai_agents_blog_part1.html">Your Sign-In Logs Already Know It's an Agent — The Gaps Are in the Layers Above</a></span>
+          <p class="part-desc">Sign-in logs already surface agent traffic via UserAgent and ClientAppUsed — the real visibility gaps live in the layers above identity.</p>
+          <p class="part-meta">April 19, 2026 · 12 min read</p>
+        </li>
+        <li>
+          <span class="part-tag">Part 2</span>
+          <span class="part-title"><a href="articles/Securing_ai_agents_blog_part2.html">Not All AI Agents Are Built the Same. Your Security Controls Assume They Are.</a></span>
+          <p class="part-desc">An AI agent is the LLM plus the framework around it. That framework comes in four distinct forms, and each one changes your security posture completely.</p>
+          <p class="part-meta">April 24, 2026 · 14 min read</p>
+        </li>
+      </ol>
+    </article>
+  </section>
+
+  <!-- ═══ ARTICLES ═══ -->
+  <section class="section">
+    <div class="section-header">
+      <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: var(--accent);">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="8" y1="13" x2="16" y2="13"></line>
+        <line x1="8" y1="17" x2="14" y2="17"></line>
+      </svg>
+      <h2 class="section-title">Articles</h2>
+    </div>
+    <p class="section-blurb">Standalone pieces.</p>
+
+    <ul class="article-list">
+      <li class="article-card">
+        <h3 class="article-title"><a href="articles/Cowork-Resume-Builder.html">Build a Compounding Resume System with Claude Cowork</a></h3>
+        <p class="article-desc">Turn a one-off resume edit into a system that gets better every time you use it.</p>
+        <p class="article-meta">April 18, 2026</p>
       </li>
     </ul>
-  </main>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="site-footer">
+    Rowan Vale &nbsp;·&nbsp; 2026
+  </footer>
+
+</div>
+
 </body>
 </html>
